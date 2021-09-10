@@ -1,7 +1,5 @@
 - hosts: localhost
   gather_facts: false
-  collections:
-    - community.k8s
   tasks:
     - name: Check that project_data_dir is set
       fail:
