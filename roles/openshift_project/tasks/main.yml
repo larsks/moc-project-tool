@@ -1,0 +1,69 @@
+- name: "{{ project_name }} : verify that quota exists"
+  file:
+    path: quotas/{{ project_data.quota }}/resourcequota.yaml
+
+- name: "{{ project_name }} : create namespace"
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ project_name }}"
+        namespace: "{{ project_name }}"
+        annotations:
+          openshift.io/requester: "{{ project_data.requester }}"
+          openshift.io/display-name: "{{ project_data.description }}"
+
+- name: "{{ project_name }} : create limitrange"
+  k8s:
+    state: present
+    definition:
+      kind: LimitRange
+      apiVersion: v1
+      metadata:
+        name: default
+        namespace: "{{ project_name }}"
+      spec:
+        limits:
+          - type: Container
+            default:
+              cpu: 500m
+              memory: 1Gi
+            defaultRequest:
+              cpu: 300m
+              memory: 400Mi
+
+- name: "{{ project_name }} : create quota"
+  k8s:
+    state: present
+    namespace: "{{ project_name }}"
+    src: quotas/{{ project_data.quota }}/resourcequota.yaml
+
+- name: "{{ project_name }} : create group"
+  k8s:
+    state: present
+    definition:
+      apiVersion: user.openshift.io/v1
+      kind: Group
+      metadata:
+        name: "{{ project_name }}-group"
+      users: "{{ project_data.users|default([]) }}"
+
+- name: "{{ project_name }} : create rolebinding"
+  k8s:
+    state: present
+    definition:
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: RoleBinding
+      metadata:
+        name: "namespace-admin-{{ project_name }}"
+        namespace: "{{ project_name }}"
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: admin
+      subjects:
+        - apiGroup: rbac.authorization.k8s.io
+          kind: Group
+          name: "{{ project_name }}-group"

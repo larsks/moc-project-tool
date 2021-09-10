@@ -1,0 +1,40 @@
+- hosts: localhost
+  gather_facts: false
+  collections:
+    - community.k8s
+  tasks:
+    - name: Check that project_data_dir is set
+      fail:
+        msg: "project_data_dir is not set"
+      when: project_data_dir is undefined or project_data_dir == ""
+
+    - name: Check that project_data_repo is set
+      fail:
+        msg: "project_data_repo is not set"
+      when: project_data_repo is undefined or project_data_repo == ""
+
+    - name: Fetch project repository
+      git:
+        repo: "{{ project_data_repo }}"
+        dest: "{{ project_data_dir }}"
+        accept_hostkey: "{{ project_accept_hostkey|default(false)|bool }}"
+        key_file: "{{ project_ssh_key|default(omit) }}"
+      register: repo
+
+    - when: repo is changed or project_force_create|default(false)|bool
+      block:
+        - name: Gather project data
+          set_fact:
+            projects: "{{ projects|combine({item|basename|splitext|first: lookup('file', item)|from_yaml}) }}"
+          loop: "{{ project_files }}"
+          vars:
+            projects: {}
+            project_files: "{{ query('fileglob', '%s/*.yaml' % project_data_dir) }}"
+
+        - name: Create projects
+          include_role:
+            name: openshift_project
+          vars:
+            project_name: "{{ item.0 }}"
+            project_data: "{{ item.1 }}"
+          loop: "{{ projects.items() }}"

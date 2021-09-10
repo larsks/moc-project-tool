@@ -1,0 +1,5 @@
+project_data_repo: "{{ lookup('env', 'PROJECT_DATA_REPO') }}"
+project_data_dir: "{{ lookup('env', 'PROJECT_DATA_DIR') }}"
+project_force_create: "{{ lookup('env', 'PROJECT_FORCE_CREATE') }}"
+project_accept_hostkey: "{{ lookup('env', 'PROJECT_ACCEPT_HOSTKEY') }}"
+project_ssh_key: "{{ lookup('env', 'PROJECT_SSH_KEY') }}"
