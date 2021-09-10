@@ -2,6 +2,10 @@
   file:
     path: quotas/{{ project_data.quota }}/resourcequota.yaml
 
+- name: "{{ project_name }} : display project information"
+  debug:
+    var: project_data
+
 - name: "{{ project_name }} : create namespace"
   k8s:
     state: present
