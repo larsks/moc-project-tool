@@ -29,7 +29,7 @@
           loop: "{{ project_files }}"
           vars:
             projects: {}
-            project_files: "{{ query('fileglob', '%s/*.yaml' % project_data_dir) }}"
+            project_files: "{{ query('fileglob', '%s/projects/*.yaml' % project_data_dir) }}"
 
         - name: Create projects
           include_role:
