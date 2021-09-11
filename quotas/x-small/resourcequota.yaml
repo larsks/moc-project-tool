@@ -6,7 +6,7 @@ metadata:
     massopen.cloud/quota-name: "x-small"
 spec:
   hard:
-    requests.cpu: '500m'
+    requests.cpu: '1'
     requests.memory: 2Gi
     limits.cpu: '1'
     limits.memory: 2Gi

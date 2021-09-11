@@ -1,6 +1,6 @@
 - name: "{{ project_name }} : verify that quota exists"
   file:
-    path: quotas/{{ project_data.quota }}/resourcequota.yaml
+    path: quotas/{{ project_data.quota|default(default_quota) }}/resourcequota.yaml
 
 - name: "{{ project_name }} : display project information"
   debug:
@@ -42,7 +42,7 @@
   kubernetes.core.k8s:
     state: present
     namespace: "{{ project_name }}"
-    src: quotas/{{ project_data.quota }}/resourcequota.yaml
+    src: quotas/{{ project_data.quota|default(default_quota) }}/resourcequota.yaml
 
 - name: "{{ project_name }} : create group"
   kubernetes.core.k8s:
