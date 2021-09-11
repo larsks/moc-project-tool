@@ -3,7 +3,7 @@ apiVersion: v1
 metadata:
   name: default
   annotations:
-    massopen.cloud/quotaname: "small"
+    massopen.cloud/quota-name: "small"
 spec:
   hard:
     requests.cpu: '1'
