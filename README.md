@@ -1,8 +1,13 @@
 # MOC Project Tool
 
-This is an Ansbile project that reads project descriptions from a
+This is an Ansible project that reads project descriptions from a
 collection of YAML files and uses that information to create projects,
 quotas, and groups in OpenShift.
+
+This project is available as a container image from
+<https://quay.io/repository/larsks/moc-project-tool>. The image is
+built automatically for each commit to this repository and tagged with
+the commit id.
 
 ## Requirements
 
