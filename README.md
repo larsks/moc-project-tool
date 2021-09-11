@@ -18,6 +18,22 @@ To install the necessary requirements:
 ansible-galaxy install -r requirements.yaml
 ```
 
+## Configuration
+
+The following environment variables can be used to configure this
+service:
+
+- `PROJECT_DATA_REPO` -- the URL for the repository containing project
+  definitions.
+- `PROJECT_DATA_DIR` -- the local path where `PROJECT_DATA_REPO` will
+  be checked out.
+- `PROJECT_FORCE_CREATE` -- Process project files even if there are no
+  changes in the repository.
+- `PROJECT_ACCEPT_HOSTKEY` -- Configure ssh to accept unknown
+  hostkeys.
+- `PROJECT_SSH_KEY` -- Path to private ssh key used to authenticate to
+  `PROJECT_DATA_REPO`.
+
 ## Quotas
 
 Quotas are defined in the `quotas/` directory in
