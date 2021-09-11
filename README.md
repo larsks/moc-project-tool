@@ -43,3 +43,16 @@ If you add additional quotas to this repository, also update the JSON
 schema in the [moc-openshift-projects][] repository.
 
 [moc-openshift-projects]: https://github.com/CCI-MOC/moc-openshift-projects
+
+## See also
+
+The Kubernetes documentation:
+
+- [Resource quotas](https://kubernetes.io/docs/concepts/policy/resource-quotas/)
+- [Resource requests and limits of Pod and
+  Container](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/)
+
+These third-party articles:
+
+- [Kubernetes best practices: Resource requests and
+  limits](https://cloud.google.com/blog/products/containers-kubernetes/kubernetes-best-practices-resource-requests-and-limits)

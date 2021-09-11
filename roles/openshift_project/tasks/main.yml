@@ -32,11 +32,11 @@
         limits:
           - type: Container
             default:
-              cpu: 500m
-              memory: 1Gi
+              cpu: "1"
+              memory: "2Gi"
             defaultRequest:
-              cpu: 300m
-              memory: 400Mi
+              cpu: "500m"
+              memory: "500Mi"
 
 - name: "{{ project_name }} : create quota"
   kubernetes.core.k8s:
