@@ -18,6 +18,8 @@
         annotations:
           openshift.io/requester: "{{ project_data.requester }}"
           openshift.io/display-name: "{{ project_data.description }}"
+        labels:
+          massopen.cloud/project: ""
 
 - name: "{{ project_name }} : create limitrange"
   kubernetes.core.k8s:
