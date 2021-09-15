@@ -2,10 +2,14 @@ FROM python:3.9
 
 WORKDIR /app
 
-COPY requirements.txt /app/requirements.txt
-RUN pip install -r requirements.txt
+ENV RUNNER_PLAYBOOK=create-projects.yaml
+ENV PIPENV_VENV_IN_PROJECT=1
+
+RUN pip install pipenv
+COPY Pipfile Pipfile.lock .
+RUN pipenv install
 COPY requirements.yaml /app/requirements.yaml
-RUN ansible-galaxy collection install -r requirements.yaml -p collections
+RUN pipenv run ansible-galaxy collection install -r requirements.yaml -p collections
 
 COPY . /app
-ENTRYPOINT ["ansible-playbook", "create-projects.yaml"]
+CMD ["pipenv", "run", "python", "runner.py"]
