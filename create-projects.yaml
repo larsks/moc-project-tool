@@ -19,6 +19,7 @@
       when: repo is changed or project_force_create|default(false)|bool
       include_role:
         name: openshift_project
+        tasks_from: create-project
       vars:
         project_data: "{{ lookup('file', item)|from_yaml }}"
         project_name: "{{ item|basename|splitext|first }}"

@@ -19,7 +19,7 @@
           openshift.io/requester: "{{ project_data.requester }}"
           openshift.io/display-name: "{{ project_data.description }}"
         labels:
-          massopen.cloud/project: ""
+          massopen.cloud/project: "{{ project_name }}"
 
 - name: "{{ project_name }} : create limitrange"
   kubernetes.core.k8s:
@@ -46,24 +46,38 @@
     namespace: "{{ project_name }}"
     src: quotas/{{ project_data.quota|default(default_quota) }}/resourcequota.yaml
 
-- name: "{{ project_name }} : create group"
+- name: "{{ project_name }} : create admin group"
   kubernetes.core.k8s:
     state: present
     definition:
       apiVersion: user.openshift.io/v1
       kind: Group
       metadata:
-        name: "{{ project_name }}-group"
+        name: "{{ project_name }}-admin"
+        labels:
+          massopen.cloud/project: "{{ project_name }}"
+      users: "{{ project_data.admins|default([]) }}"
+
+- name: "{{ project_name }} : create member group"
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: user.openshift.io/v1
+      kind: Group
+      metadata:
+        name: "{{ project_name }}-member"
+        labels:
+          massopen.cloud/project: "{{ project_name }}"
       users: "{{ project_data.users|default([]) }}"
 
-- name: "{{ project_name }} : create rolebinding"
+- name: "{{ project_name }} : create admin rolebinding"
   kubernetes.core.k8s:
     state: present
     definition:
       apiVersion: rbac.authorization.k8s.io/v1
       kind: RoleBinding
       metadata:
-        name: "namespace-admin-{{ project_name }}"
+        name: "{{ project_name }}-admin"
         namespace: "{{ project_name }}"
       roleRef:
         apiGroup: rbac.authorization.k8s.io
@@ -72,4 +86,22 @@
       subjects:
         - apiGroup: rbac.authorization.k8s.io
           kind: Group
-          name: "{{ project_name }}-group"
+          name: "{{ project_name }}-admin"
+
+- name: "{{ project_name }} : create member rolebinding"
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: RoleBinding
+      metadata:
+        name: "{{ project_name }}-member"
+        namespace: "{{ project_name }}"
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: edit
+      subjects:
+        - apiGroup: rbac.authorization.k8s.io
+          kind: Group
+          name: "{{ project_name }}-member"

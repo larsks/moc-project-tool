@@ -1,0 +1,27 @@
+- name: "{{ project_name }} : delete namespace"
+  kubernetes.core.k8s:
+    state: absent
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ project_name }}"
+        namespace: "{{ project_name }}"
+
+- name: "{{ project_name }} : delete admin group"
+  kubernetes.core.k8s:
+    state: absent
+    definition:
+      apiVersion: user.openshift.io/v1
+      kind: Group
+      metadata:
+        name: "{{ project_name }}-admin"
+
+- name: "{{ project_name }} : delete member group"
+  kubernetes.core.k8s:
+    state: absent
+    definition:
+      apiVersion: user.openshift.io/v1
+      kind: Group
+      metadata:
+        name: "{{ project_name }}-member"

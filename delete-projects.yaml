@@ -1,0 +1,10 @@
+- hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Delete projects
+      include_role:
+        name: openshift_project
+        tasks_from: delete-project
+      vars:
+        project_data: "{{ item }}"
+      loop: "{{ project_names|default([project_name]) }}"
