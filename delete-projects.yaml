@@ -6,5 +6,5 @@
         name: openshift_project
         tasks_from: delete-project
       vars:
-        project_data: "{{ item }}"
+        project_name: "{{ item|lower }}"
       loop: "{{ project_names|default([project_name]) }}"

@@ -22,5 +22,5 @@
         tasks_from: create-project
       vars:
         project_data: "{{ lookup('file', item)|from_yaml }}"
-        project_name: "{{ item|basename|splitext|first }}"
+        project_name: "{{ item|basename|splitext|first|lower }}"
       loop: "{{ query('fileglob', '%s/projects/*.yaml' % project_data_dir) }}"
