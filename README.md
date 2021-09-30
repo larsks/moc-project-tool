@@ -20,6 +20,16 @@ ansible-galaxy install -r requirements.yaml
 
 ## Configuration
 
+The following two environment variables are "safeties" to avoid
+accidentally modifying OpenShift while developing these playbooks. If
+neither of these variables is set, the `manage-projects.yaml` playbook
+runs in read-only mode:
+
+- `ACTUALLY_CREATE_PROJECTS` -- the playbooks will not create
+  resources in OpenShift unless this is `true`
+- `ACTUALLY_DELETE_PROJECTS` -- the playbooks will not delete
+  resources from OpenShift unless this is `true`
+
 The following environment variables can be used to configure this
 service:
 
@@ -27,7 +37,7 @@ service:
   definitions.
 - `PROJECT_DATA_DIR` -- the local path where `PROJECT_DATA_REPO` will
   be checked out.
-- `PROJECT_FORCE_CREATE` -- Process project files even if there are no
+- `PROJECT_FORCE_TRIGGER` -- Process project files even if there are no
   changes in the repository.
 - `PROJECT_ACCEPT_HOSTKEY` -- Configure ssh to accept unknown
   hostkeys.
@@ -42,9 +52,8 @@ Quotas are defined in the `quotas/` directory in
 `massopen.cloud/quota-name` annotation, like this:
 
 ```
-
-kind: ResourceQuota
 apiVersion: v1
+kind: ResourceQuota
 metadata:
   name: default
   annotations:

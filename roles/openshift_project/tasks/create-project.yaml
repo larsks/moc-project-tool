@@ -6,102 +6,111 @@
   debug:
     var: project_data
 
-- name: "{{ project_name }} : create namespace"
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: v1
-      kind: Namespace
-      metadata:
-        name: "{{ project_name }}"
+- when: actually_create_projects|default(false)|bool
+  block:
+    - name: "{{ project_name }} : create namespace"
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: "{{ project_name }}"
+            namespace: "{{ project_name }}"
+
+            # We put the description in display-name because this shows up
+            # in the project list [1], although oddly enough it
+            # *doesn't* show up in the project detail page. Sometimes
+            # you just can't win.
+            #
+            # [1]: https://console-openshift-console.apps.ocp-prod.massopen.cloud/k8s/cluster/projects
+            annotations:
+              openshift.io/requester: "{{ project_data.requester }}"
+              openshift.io/display-name: "{{ project_data.description }}"
+            labels:
+              massopen.cloud/project: "{{ project_name }}"
+
+    - name: "{{ project_name }} : create limitrange"
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          kind: LimitRange
+          apiVersion: v1
+          metadata:
+            name: default
+            namespace: "{{ project_name }}"
+          spec:
+            limits:
+              - type: Container
+                default:
+                  cpu: "1"
+                  memory: "2Gi"
+                defaultRequest:
+                  cpu: "500m"
+                  memory: "500Mi"
+
+    - name: "{{ project_name }} : create quota"
+      kubernetes.core.k8s:
+        state: present
         namespace: "{{ project_name }}"
-        annotations:
-          openshift.io/requester: "{{ project_data.requester }}"
-          openshift.io/display-name: "{{ project_data.description }}"
-        labels:
-          massopen.cloud/project: "{{ project_name }}"
+        src: quotas/{{ project_data.quota|default(default_quota) }}/resourcequota.yaml
 
-- name: "{{ project_name }} : create limitrange"
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      kind: LimitRange
-      apiVersion: v1
-      metadata:
-        name: default
-        namespace: "{{ project_name }}"
-      spec:
-        limits:
-          - type: Container
-            default:
-              cpu: "1"
-              memory: "2Gi"
-            defaultRequest:
-              cpu: "500m"
-              memory: "500Mi"
-
-- name: "{{ project_name }} : create quota"
-  kubernetes.core.k8s:
-    state: present
-    namespace: "{{ project_name }}"
-    src: quotas/{{ project_data.quota|default(default_quota) }}/resourcequota.yaml
-
-- name: "{{ project_name }} : create admin group"
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: user.openshift.io/v1
-      kind: Group
-      metadata:
-        name: "{{ project_name }}-admin"
-        labels:
-          massopen.cloud/project: "{{ project_name }}"
-      users: "{{ project_data.admins|default([]) }}"
-
-- name: "{{ project_name }} : create member group"
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: user.openshift.io/v1
-      kind: Group
-      metadata:
-        name: "{{ project_name }}-member"
-        labels:
-          massopen.cloud/project: "{{ project_name }}"
-      users: "{{ project_data.users|default([]) }}"
-
-- name: "{{ project_name }} : create admin rolebinding"
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: rbac.authorization.k8s.io/v1
-      kind: RoleBinding
-      metadata:
-        name: "{{ project_name }}-admin"
-        namespace: "{{ project_name }}"
-      roleRef:
-        apiGroup: rbac.authorization.k8s.io
-        kind: ClusterRole
-        name: admin
-      subjects:
-        - apiGroup: rbac.authorization.k8s.io
+    - name: "{{ project_name }} : create admin group"
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: user.openshift.io/v1
           kind: Group
-          name: "{{ project_name }}-admin"
+          metadata:
+            name: "{{ project_name }}-admin"
+            labels:
+              massopen.cloud/project: "{{ project_name }}"
+          users: "{{ project_data.admins|default([]) }}"
 
-- name: "{{ project_name }} : create member rolebinding"
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      apiVersion: rbac.authorization.k8s.io/v1
-      kind: RoleBinding
-      metadata:
-        name: "{{ project_name }}-member"
-        namespace: "{{ project_name }}"
-      roleRef:
-        apiGroup: rbac.authorization.k8s.io
-        kind: ClusterRole
-        name: edit
-      subjects:
-        - apiGroup: rbac.authorization.k8s.io
+    - name: "{{ project_name }} : create member group"
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: user.openshift.io/v1
           kind: Group
-          name: "{{ project_name }}-member"
+          metadata:
+            name: "{{ project_name }}-member"
+            labels:
+              massopen.cloud/project: "{{ project_name }}"
+          users: "{{ project_data.users|default([]) }}"
+
+    - name: "{{ project_name }} : create admin rolebinding"
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: RoleBinding
+          metadata:
+            name: "{{ project_name }}-admin"
+            namespace: "{{ project_name }}"
+          roleRef:
+            apiGroup: rbac.authorization.k8s.io
+            kind: ClusterRole
+            name: admin
+          subjects:
+            - apiGroup: rbac.authorization.k8s.io
+              kind: Group
+              name: "{{ project_name }}-admin"
+
+    - name: "{{ project_name }} : create member rolebinding"
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: RoleBinding
+          metadata:
+            name: "{{ project_name }}-member"
+            namespace: "{{ project_name }}"
+          roleRef:
+            apiGroup: rbac.authorization.k8s.io
+            kind: ClusterRole
+            name: edit
+          subjects:
+            - apiGroup: rbac.authorization.k8s.io
+              kind: Group
+              name: "{{ project_name }}-member"

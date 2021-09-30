@@ -1,0 +1,69 @@
+- hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Check that project_data_dir is set
+      fail:
+        msg: "project_data_dir is not set"
+      when: project_data_dir is undefined or project_data_dir == ""
+
+    - name: Fetch project repository
+      when: project_data_repo|default(false)
+      git:
+        repo: "{{ project_data_repo }}"
+        dest: "{{ project_data_dir }}"
+        accept_hostkey: "{{ project_accept_hostkey|default(false)|bool }}"
+        key_file: "{{ project_ssh_key|default(omit) }}"
+      register: repo
+
+    - name: Get local projects
+      set_fact:
+        local_projects: "{{ query('fileglob', '%s/projects/*.yaml' % project_data_dir) }}"
+        local_project_names: "{{ query('fileglob', '%s/projects/*.yaml' % project_data_dir) | map('basename') | map('regex_replace', '\\.yaml$', '') }}"
+
+    - name: Get projects from OpenShift
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: Namespace
+        label_selectors:
+          - massopen.cloud/project
+      register: openshift_projects
+
+    - name: Extract OpenShift project names
+      set_fact:
+        openshift_project_names: "{{ openshift_projects | json_query('resources[].metadata.name') }}"
+
+    - name: Calculate differences
+      set_fact:
+        projects_to_delete: "{{ openshift_project_names | difference(local_project_names) }}"
+        projects_to_create: "{{ local_project_names | difference(openshift_project_names) }}"
+
+    - name: Show changes
+      debug:
+        msg: >-
+          {{ {
+            "projects to create": projects_to_create,
+            "projects to delete": projects_to_delete,
+          } }}
+
+    - when: repo is changed or project_force_trigger|default(false)|bool
+      block:
+
+        # We run the "Update projects" task for all projects because in addition
+        # to creating new projects it is also responsible for things like quota
+        # modifications, changes to project membership, etc.
+        - name: Update projects
+          include_role:
+            name: openshift_project
+            tasks_from: create-project
+          vars:
+            project_name: "{{ item.0 }}"
+            project_data: "{{ lookup('file', item.1)|from_yaml }}"
+          loop: "{{ local_project_names|zip(local_projects) }}"
+
+        - name: Delete projects
+          include_role:
+            name: openshift_project
+            tasks_from: delete-project
+          vars:
+            project_name: "{{ item }}"
+          loop: "{{ projects_to_delete }}"

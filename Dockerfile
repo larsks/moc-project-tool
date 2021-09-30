@@ -3,7 +3,7 @@ FROM quay.io/larsks/python:3.9
 
 WORKDIR /app
 
-ENV RUNNER_PLAYBOOK=create-projects.yaml
+ENV RUNNER_PLAYBOOK=manage-projects.yaml
 ENV PIPENV_VENV_IN_PROJECT=1
 
 RUN pip install pipenv
