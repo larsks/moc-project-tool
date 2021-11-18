@@ -1,10 +1,12 @@
-- name: "{{ project_name }} : verify that quota exists"
-  file:
-    path: quotas/{{ project_data.quota|default(default_quota) }}/resourcequota.yaml
-
 - name: "{{ project_name }} : display project information"
   debug:
     var: project_data
+
+- name: "{{ project_name }} : verify that quota exists"
+  when: >-
+    project_data.quota != "no-quota"
+  file:
+    path: quotas/{{ project_data.quota|default(default_quota) }}/resourcequota.yaml
 
 - name: "{{ project_name }} : create namespace"
   kubernetes.core.k8s:
@@ -21,30 +23,33 @@
         labels:
           massopen.cloud/project: "{{ project_name }}"
 
-- name: "{{ project_name }} : create limitrange"
-  kubernetes.core.k8s:
-    state: present
-    definition:
-      kind: LimitRange
-      apiVersion: v1
-      metadata:
-        name: default
-        namespace: "{{ project_name }}"
-      spec:
-        limits:
-          - type: Container
-            default:
-              cpu: "1"
-              memory: "2Gi"
-            defaultRequest:
-              cpu: "500m"
-              memory: "500Mi"
+- when: >-
+    project_data.quota != "no-quota"
+  block:
+    - name: "{{ project_name }} : create limitrange"
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          kind: LimitRange
+          apiVersion: v1
+          metadata:
+            name: default
+            namespace: "{{ project_name }}"
+          spec:
+            limits:
+              - type: Container
+                default:
+                  cpu: "1"
+                  memory: "2Gi"
+                defaultRequest:
+                  cpu: "500m"
+                  memory: "500Mi"
 
-- name: "{{ project_name }} : create quota"
-  kubernetes.core.k8s:
-    state: present
-    namespace: "{{ project_name }}"
-    src: quotas/{{ project_data.quota|default(default_quota) }}/resourcequota.yaml
+    - name: "{{ project_name }} : create quota"
+      kubernetes.core.k8s:
+        state: present
+        namespace: "{{ project_name }}"
+        src: quotas/{{ project_data.quota|default(default_quota) }}/resourcequota.yaml
 
 - name: "{{ project_name }} : create admin group"
   kubernetes.core.k8s:
