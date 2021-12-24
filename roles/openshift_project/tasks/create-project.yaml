@@ -30,24 +30,19 @@
             labels:
               massopen.cloud/project: "{{ project_name }}"
 
+    # Using `with_first_found` with `skip: true` means that this task
+    # will only run if the named file exists.
     - name: "{{ project_name }} : create limitrange"
       kubernetes.core.k8s:
         state: present
-        definition:
-          kind: LimitRange
-          apiVersion: v1
-          metadata:
-            name: default
-            namespace: "{{ project_name }}"
-          spec:
-            limits:
-              - type: Container
-                default:
-                  cpu: "1"
-                  memory: "2Gi"
-                defaultRequest:
-                  cpu: "500m"
-                  memory: "500Mi"
+        namespace: "{{ project_name }}"
+        src: "{{ objdef }}"
+      loop_control:
+        loop_var: objdef
+      with_first_found:
+        - skip: true
+          files:
+            - quotas/{{ project_data.quota|default(default_quota) }}/limitrange.yaml
 
     - name: "{{ project_name }} : create quota"
       kubernetes.core.k8s:
@@ -55,62 +50,41 @@
         namespace: "{{ project_name }}"
         src: quotas/{{ project_data.quota|default(default_quota) }}/resourcequota.yaml
 
-    - name: "{{ project_name }} : create admin group"
+    - name: "{{ project_name }} : create groups"
       kubernetes.core.k8s:
         state: present
         definition:
           apiVersion: user.openshift.io/v1
           kind: Group
           metadata:
-            name: "{{ project_name }}-admin"
+            name: "{{ project_name }}-{{ role }}"
             labels:
               massopen.cloud/project: "{{ project_name }}"
-          users: "{{ project_data.admins|default([]) }}"
+          users: "{{ project_data[project_member_attr[role]]|default([]) }}"
+      loop_control:
+        loop_var: role
+      loop:
+        - admin
+        - member
+        - reader
 
-    - name: "{{ project_name }} : create member group"
-      kubernetes.core.k8s:
-        state: present
-        definition:
-          apiVersion: user.openshift.io/v1
-          kind: Group
-          metadata:
-            name: "{{ project_name }}-member"
-            labels:
-              massopen.cloud/project: "{{ project_name }}"
-          users: "{{ project_data.users|default([]) }}"
-
-    - name: "{{ project_name }} : create admin rolebinding"
+    - name: "{{ project_name }} : create rolebindings"
       kubernetes.core.k8s:
         state: present
         definition:
           apiVersion: rbac.authorization.k8s.io/v1
           kind: RoleBinding
           metadata:
-            name: "{{ project_name }}-admin"
+            name: "{{ project_name }}-{{ role }}"
             namespace: "{{ project_name }}"
           roleRef:
             apiGroup: rbac.authorization.k8s.io
             kind: ClusterRole
-            name: admin
+            name: "{{ project_role_map[role] }}"
           subjects:
             - apiGroup: rbac.authorization.k8s.io
               kind: Group
-              name: "{{ project_name }}-admin"
-
-    - name: "{{ project_name }} : create member rolebinding"
-      kubernetes.core.k8s:
-        state: present
-        definition:
-          apiVersion: rbac.authorization.k8s.io/v1
-          kind: RoleBinding
-          metadata:
-            name: "{{ project_name }}-member"
-            namespace: "{{ project_name }}"
-          roleRef:
-            apiGroup: rbac.authorization.k8s.io
-            kind: ClusterRole
-            name: edit
-          subjects:
-            - apiGroup: rbac.authorization.k8s.io
-              kind: Group
-              name: "{{ project_name }}-member"
+              name: "{{ project_name }}-{{ role }}"
+      loop_control:
+        loop_var: role
+      loop: "{{ project_role_map.keys() }}"

@@ -21,16 +21,15 @@
         name: "{{ project_name }}"
         namespace: "{{ project_name }}"
 
-    - name: "{{ project_name }} : delete admin group"
+    - name: "{{ project_name }} : delete groups"
       kubernetes.core.k8s:
         state: absent
         api_version: user.openshift.io/v1
         kind: Group
-        name: "{{ project_name }}-admin"
-
-    - name: "{{ project_name }} : delete member group"
-      kubernetes.core.k8s:
-        state: absent
-        api_version: user.openshift.io/v1
-        kind: Group
-        name: "{{ project_name }}-member"
+        name: "{{ project_name }}-{{ role }}"
+      loop_control:
+        loop_var: role
+      loop:
+        - admin
+        - member
+        - reader
