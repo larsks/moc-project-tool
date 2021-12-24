@@ -1,0 +1,13 @@
+kind: ResourceQuota
+apiVersion: v1
+metadata:
+  name: default
+  annotations:
+    massopen.cloud/quota-name: "virtual-rose"
+spec:
+  hard:
+    requests.cpu: '100'
+    requests.memory: '200Gi'
+    limits.cpu: '150'
+    limits.memory: '250Gi'
+    requests.storage: '625Gi'

@@ -6,8 +6,8 @@ metadata:
     massopen.cloud/quota-name: "x-large"
 spec:
   hard:
-    requests.cpu: '8'
-    requests.memory: 32Gi
-    limits.cpu: '8'
-    limits.memory: 32Gi
+    requests.cpu: '16'
+    requests.memory: 64Gi
+    limits.cpu: '16'
+    limits.memory: 64Gi
     requests.storage: 200Gi
