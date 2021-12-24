@@ -6,7 +6,7 @@
   debug:
     var: project_data
 
-- when: actually_create_projects|default(false)|bool
+- when: not project_dryrun|default(false)|bool
   block:
     - name: "{{ project_name }} : create namespace"
       kubernetes.core.k8s:

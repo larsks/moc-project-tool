@@ -1,4 +1,4 @@
-- when: actually_delete_projects|default(false)|bool
+- when: not project_dryrun|default(false)|bool
   block:
     - name: "{{ project_name }} : lookup namespace"
       kubernetes.core.k8s_info:

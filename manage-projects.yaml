@@ -45,25 +45,24 @@
             "projects to delete": projects_to_delete,
           } }}
 
-    - when: repo is changed or project_force_trigger|default(false)|bool
-      block:
+    # We run the "Update projects" task for all projects because in addition
+    # to creating new projects it is also responsible for things like quota
+    # modifications, changes to project membership, etc.
+    - name: Update projects
+      when: repo is changed or projects_to_create|length > 0
+      include_role:
+        name: openshift_project
+        tasks_from: create-project
+      vars:
+        project_name: "{{ item.0 }}"
+        project_data: "{{ lookup('file', item.1)|from_yaml }}"
+      loop: "{{ local_project_names|zip(local_projects) }}"
 
-        # We run the "Update projects" task for all projects because in addition
-        # to creating new projects it is also responsible for things like quota
-        # modifications, changes to project membership, etc.
-        - name: Update projects
-          include_role:
-            name: openshift_project
-            tasks_from: create-project
-          vars:
-            project_name: "{{ item.0 }}"
-            project_data: "{{ lookup('file', item.1)|from_yaml }}"
-          loop: "{{ local_project_names|zip(local_projects) }}"
-
-        - name: Delete projects
-          include_role:
-            name: openshift_project
-            tasks_from: delete-project
-          vars:
-            project_name: "{{ item }}"
-          loop: "{{ projects_to_delete }}"
+    - name: Delete projects
+      when: projects_to_delete|length > 0
+      include_role:
+        name: openshift_project
+        tasks_from: delete-project
+      vars:
+        project_name: "{{ item }}"
+      loop: "{{ projects_to_delete }}"
